@@ -33,9 +33,9 @@ end with a fixed vocabulary of reusable pieces. The repo does not train its own 
 
 For pretraining, documents are converted into one flat array:
 
-\[
+$$
 [d_1, \text{EOT}, d_2, \text{EOT}, \ldots, d_N, \text{EOT}]
-\]
+$$
 
 `scripts/prepare_pretrain_data.py` streams Pile shards, tokenizes documents, appends EOT, and writes
 the result to HDF5:
@@ -51,13 +51,13 @@ for ids in enc.encode_ordinary_batch(docs):
 The training loader slices random windows of length `context_length + 1`. The first `context_length`
 tokens are inputs. The next `context_length` tokens are targets shifted by one position:
 
-\[
+$$
 x = [t_0, t_1, \ldots, t_{T-1}]
-\]
+$$
 
-\[
+$$
 y = [t_1, t_2, \ldots, t_T]
-\]
+$$
 
 That shift is the entire next-token prediction task.
 
@@ -121,13 +121,13 @@ answer quality, not prompt difficulty.
 
 For a batch, the loader creates two tokenized sequences:
 
-\[
+$$
 \text{chosen ids} = \text{chat}(prompt, chosen)
-\]
+$$
 
-\[
+$$
 \text{rejected ids} = \text{chat}(prompt, rejected)
-\]
+$$
 
 The chosen and rejected sides are padded to the same length for batching. The repo tracks true sequence
 lengths so the reward model can read the last real token instead of a padding token.
