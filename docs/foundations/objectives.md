@@ -7,46 +7,43 @@ For a decoder-only language model, the base objective is next-token prediction.
 
 ## From logits to probability
 
-At position \(t\), the model emits logits:
+At position $t$, the model emits logits:
 
-\[
+$$
 z_t \in \mathbb{R}^{V}
-\]
+$$
 
 Softmax turns logits into a distribution:
 
-\[
-p_\theta(x_{t+1}=i \mid x_{\leq t})
-= \frac{\exp(z_{t,i})}{\sum_{j=1}^{V}\exp(z_{t,j})}
-\]
+$$
+p_\theta(x_{t+1}=i \mid x_{\leq t}) = \frac{\exp(z_{t,i})}{\sum_{j=1}^{V}\exp(z_{t,j})}
+$$
 
 The target is one integer token id \(y_t\). Cross-entropy for that position is:
 
-\[
+$$
 \ell_t = -\log p_\theta(y_t \mid x_{\leq t})
-\]
+$$
 
 The batch loss is the mean over positions:
 
-\[
-\mathcal{L}_{\text{LM}}
-= -\frac{1}{BT}\sum_{b=1}^{B}\sum_{t=1}^{T}
-\log p_\theta(y_{b,t} \mid x_{b,\leq t})
-\]
+$$
+\mathcal{L}_{\text{LM}} = -\frac{1}{BT}\sum_{b=1}^{B}\sum_{t=1}^{T} \log p_\theta(y_{b,t} \mid x_{b,\leq t})
+$$
 
 ## The shift
 
 The model receives:
 
-\[
+$$
 x = [t_0,t_1,\ldots,t_{T-1}]
-\]
+$$
 
 and predicts:
 
-\[
+$$
 y = [t_1,t_2,\ldots,t_T]
-\]
+$$
 
 In `src/models/transformer.py`, the simple `forward` path computes cross-entropy over all positions:
 
@@ -69,9 +66,9 @@ mask = loss_mask[:, 1:].to(logits.dtype)
 
 Perplexity is exponentiated cross-entropy:
 
-\[
+$$
 \text{PPL} = \exp(\mathcal{L})
-\]
+$$
 
 If the model assigns high probability to the true next tokens, loss falls and perplexity falls.
 
@@ -83,9 +80,9 @@ Interpretation:
 
 With `V = 50304`:
 
-\[
+$$
 \log(V) \approx 10.83
-\]
+$$
 
 So an untrained model often starts near that value.
 
@@ -93,11 +90,11 @@ So an untrained model often starts near that value.
 
 SFT still uses next-token cross-entropy, but only assistant completion tokens count:
 
-\[
+$$
 \mathcal{L}_{\text{SFT}} =
 \frac{\sum_{b,t} m_{b,t}\,\ell_{b,t}}
 {\sum_{b,t} m_{b,t}}
-\]
+$$
 
 where \(m_{b,t}=1\) for assistant tokens and \(0\) for prompt tokens.
 
@@ -143,20 +140,17 @@ That one primitive is reused by:
 DPO uses preference pairs: chosen response \(y_w\) and rejected response \(y_l\). It compares the policy
 against a frozen reference model:
 
-\[
-\Delta_\pi =
-\log \pi_\theta(y_w \mid x) - \log \pi_\theta(y_l \mid x)
-\]
+$$
+\Delta_\pi = \log \pi_\theta(y_w \mid x) - \log \pi_\theta(y_l \mid x)
+$$
 
-\[
-\Delta_{\text{ref}} =
-\log \pi_{\text{ref}}(y_w \mid x) - \log \pi_{\text{ref}}(y_l \mid x)
-\]
+$$
+\Delta_{\text{ref}} = \log \pi_{\text{ref}}(y_w \mid x) - \log \pi_{\text{ref}}(y_l \mid x)
+$$
 
-\[
-\mathcal{L}_{\text{DPO}} =
--\log \sigma\left(\beta(\Delta_\pi - \Delta_{\text{ref}})\right)
-\]
+$$
+\mathcal{L}_{\text{DPO}} = -\log \sigma\left(\beta(\Delta_\pi - \Delta_{\text{ref}})\right)
+$$
 
 In `src/post_training/dpo.py`:
 
@@ -175,16 +169,16 @@ relative to the reference model so the policy does not drift without constraint.
 PPO samples responses, scores them, and updates the policy using the ratio between new and old action
 probabilities:
 
-\[
+$$
 r_t(\theta) =
 \frac{\pi_\theta(a_t \mid s_t)}
 {\pi_{\text{old}}(a_t \mid s_t)}
 = \exp(\log \pi_\theta - \log \pi_{\text{old}})
-\]
+$$
 
 The clipped policy objective is:
 
-\[
+$$
 \mathcal{L}_{\text{PPO}} =
 -\mathbb{E}_t
 \left[
@@ -194,7 +188,7 @@ r_t(\theta) A_t,
 \text{clip}(r_t(\theta),1-\epsilon,1+\epsilon) A_t
 \right)
 \right]
-\]
+$$
 
 The repo implements that in `src/post_training/ppo.py`:
 
@@ -212,10 +206,10 @@ The clip prevents one update from moving too far from the sampled policy.
 GRPO avoids a learned value function. For each prompt, it samples a group of responses and normalizes
 their rewards within the group:
 
-\[
+$$
 A_i = \frac{r_i - \text{mean}(r_1,\ldots,r_G)}
 {\text{std}(r_1,\ldots,r_G)+\epsilon}
-\]
+$$
 
 That advantage says: "Was this answer better or worse than its siblings for the same prompt?"
 
